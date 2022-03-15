@@ -56,12 +56,7 @@ output = json
 region = us-east-1
 EOF
 
-tee -a credentials <<EOF
-[default]
-aws_access_key_id=
-aws_secret_access_key=
-aws_session_token=
-EOF
+sleep 10
 
 aws ecr create-repository --repository-name hello-repository --region us-east-1
 

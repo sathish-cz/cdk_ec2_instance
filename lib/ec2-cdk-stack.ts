@@ -5,11 +5,20 @@ import * as path from 'path';
 import { KeyPair } from 'cdk-ec2-key-pair';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
 import { Construct } from 'constructs';
+import * as codecommit from 'aws-cdk-lib/aws-codecommit'; 
+import {CodeBuildStep, CodePipeline, CodePipelineSource} from "aws-cdk-lib/pipelines"; 
 
 export class Ec2CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+        // Creates a CodeCommit repository called 'WorkshopRepo' 
+
+    new codecommit.Repository(this, 'Ec2_Stack', { 
+
+      repositoryName: "Ec2_Stack" 
+
+      });     
     // Create a Key Pair to be used with this EC2 Instance
     // Temporarily disabled since `cdk-ec2-key-pair` is not yet CDK v2 compatible
     const key = new KeyPair(this, 'KeyPair', {
@@ -31,17 +40,18 @@ export class Ec2CdkStack extends cdk.Stack {
     // Allow SSH (TCP Port 22) access from anywhere
     const securityGroup = new ec2.SecurityGroup(this, 'SecurityGroup', {
       vpc,
-      description: 'Allow SSH (TCP port 22) in',
+      description: 'Allow SSH & Webserver (TCP port 22 & 80) in',
       allowAllOutbound: true
     });
     securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH Access')
+    securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow http Access')
 
     const role = new iam.Role(this, 'ec2Role', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com')
     })
 
-    role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'))
-
+    role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'))
+    
     // Use Latest Amazon Linux Image - CPU Type ARM64
     const ami = new ec2.AmazonLinuxImage({
       generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
